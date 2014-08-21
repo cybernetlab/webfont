@@ -88,15 +88,15 @@ if not os.path.isdir(options['icons-dir']):
 # add modules extensions folders
 if options['debug']: print('Loading modules. Optioins are: {0}'.format(options))
 options['root'] = os.path.abspath(os.path.dirname(__file__))
-if os.path.isdir(os.path.join(options['work-dir'], 'extensions')):
-    sys.path += [options['work-dir']]
+if options['work-dir'] not in sys.path:
+    sys.path.insert(0, options['work-dir'])
 
 try:
     icons = list(get_icons(options['icons-dir']))
 
     # retrieve module list
     modules = dict(
-        (ext, importlib.import_module('extensions.' + ext)) \
+        (ext, importlib.import_module(ext + '_extension')) \
             for ext in reduce(lambda a, x: a | x['extensions'], icons, set())
     )
 
