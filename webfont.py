@@ -86,6 +86,7 @@ if not os.path.isdir(options['icons-dir']):
     parser.error('Icons directory {0} doen\'t exists'.format(options['icons-dir']))
 
 # add modules extensions folders
+if options['debug']: print('Loading modules. Optioins are: {0}'.format(options))
 options['root'] = os.path.abspath(os.path.dirname(__file__))
 ext_dir = os.path.join(options['work-dir'], 'extensions')
 if os.path.isdir(ext_dir): sys.path += [ext_dir]
@@ -113,7 +114,7 @@ try:
         if hasattr(module, 'parse_options'):
             module.parse_options(options, arg_parser)
 
-    if options['debug']: print('options are: {0}'.format(options))
+    if options['debug']: print('Modules loaded. Options are: {0}'.format(options))
 
     # initialize modules
     for module in modules.values():
