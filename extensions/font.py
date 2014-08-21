@@ -3,6 +3,9 @@ import cairo
 import rsvg
 import tempfile
 import os
+import re
+
+FORMATS = ['otf', 'ttf', 'eot', 'woff', 'svg', 'sfd']
 
 # used to disable output from fontforge
 #class NullWriter(object):
@@ -16,6 +19,46 @@ import os
 #def enable_output(options):
 #	if options['debug']: return
 #	sys.stdout = options['_stdout']
+
+def get_options(parser):
+	group = parser.add_argument_group('font creation options')
+	group.add_argument('-l', '--font-copyright',
+					   dest='font-copyright', default='OFL',
+	             	   help='font copyright (default: "OFL")')
+	group.add_argument('-n', '--font-family',
+					   dest='font-family',
+	                   help='font family (default: camel-cased work-dir)')
+	group.add_argument('-w', '--font-weight',
+                       dest='font-weight', default=500, type=int,
+	                   help='font weight (default: 500)')
+	group.add_argument('-f', '--font-formats',
+                       dest='font-formats', default='all',
+	                   help='output font formats (default: "all")')
+	group.add_argument('-F', '--font-output',
+                       dest='font-output', default='',
+	                   help='fonts output folder (except .sfd) relative to' +
+                            ' output-dir (default: output-dir itself)')
+	group.add_argument('-S', '--sfd-output',
+                       dest='sfd-output', default='',
+	                   help='SFD font output folder relative to work-dir' +
+                            ' (default: work-dir itself)')
+
+def parse_options(options, parser):
+	options['output-dir'] = os.path.join(options['work-dir'], options['output-dir'])
+	options['font-output'] = os.path.join(options['output-dir'], options['font-output'])
+	options['sfd-output'] = os.path.join(options['work-dir'], options['sfd-output'])
+
+	if options['font-family'] is None:
+		options['font-family'] = ''.join(
+			x.capitalize() or '_' for x in os.path.basename(
+				os.path.normpath(options['work-dir'])).split('_'))
+
+	if options['font-formats'] == 'all': options['font-formats'] = FORMATS
+	if isinstance(options['font-formats'], basestring):
+		options['font-formats'] = re.split('\W+', options['font-formats'])
+	for fmt in options['font-formats']:
+		if fmt not in FORMATS:
+			parser.error('Wrong output font format: {0}'.format(fmt))
 
 def init(options = {}, **args):
 	options['_font'] = font = fontforge.font()
