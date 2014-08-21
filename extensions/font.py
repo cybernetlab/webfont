@@ -75,6 +75,7 @@ def finish(options = {}, **args):
 		font.save(os.path.join(options['sfd-output'], options['font-family'] + '.sfd'))
 	if 'ttf' in options['font-formats'] or 'eot' in options['font-formats']:
 		font.em = 2048
+		font.round() # ttf requires integer points
 		ttf_path = os.path.join(options['font-output'], options['font-family'] + '.ttf')
 		font.generate(ttf_path)
 		if 'eot' in options['font-formats']:
