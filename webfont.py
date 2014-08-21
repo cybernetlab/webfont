@@ -9,7 +9,7 @@ import argparse
 import yaml
 
 ICON_RE = re.compile('^uni([0-9a-fA-F]+)_([a-zA-Z][a-zA-Z0-9\-]*)' +
-					 '(?:(_[a-zA-Z\-]+))?\.svg$')
+					 '(?:_([a-zA-Z\-]+))?\.svg$')
 BUILTIN = set(['svg', 'font'])
 
 # icons generator
