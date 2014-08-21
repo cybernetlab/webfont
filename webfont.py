@@ -100,8 +100,7 @@ try:
 
 	# get modules options
 	for module in modules.values():
-		if hasattr(module, 'get_options'):
-            module.get_options(arg_parser)
+		if hasattr(module, 'get_options'): module.get_options(arg_parser)
 
 	# parse unknown options for modules
 	options = dict(vars(arg_parser.parse_args(module_args)).items() +
@@ -109,13 +108,11 @@ try:
 
 	# module-specific options parsing
 	for module in modules.values():
-		if hasattr(module, 'parse_options'):
-            module.parse_options(options, arg_parser)
+		if hasattr(module, 'parse_options'): module.parse_options(options, arg_parser)
 
 	# initialize modules
 	for module in modules.values():
-		if hasattr(module, 'init'):
-            module.init(options=options, icons=icons)
+		if hasattr(module, 'init'): module.init(options=options, icons=icons)
 
 	# iterate through icons
 	for icon in icons:
@@ -124,8 +121,7 @@ try:
 
 	# modules teardown
 	for module in modules.values():
-		if hasattr(module, 'finish'):
-            module.finish(options=options, icons=icons)
+		if hasattr(module, 'finish'): module.finish(options=options, icons=icons)
 
 finally:
 	None
