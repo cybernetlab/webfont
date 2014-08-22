@@ -34,6 +34,7 @@ work-dir|--work-dir -d|project root folder|config directory
 output-dir|--output-dir -o|output folder relative to work-dir|work-dir itself
 icons-dir|--icons-dir -i|icons folder relative to work-dir|icons
 debug|--debug -D|print some debug info|`False`
+default-extensions|--default-extensions -e|comma separated list of default extensions|`'svg font css'`
 font-copyright|--font-copyright -l|`'OFL'`
 font-family|--font-family -n|font family|camel-cased work-dir
 font-weight|--font-weight -w|font weight|`500`

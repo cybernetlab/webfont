@@ -2,26 +2,14 @@ import fontforge
 import cairo
 import rsvg
 import tempfile
+import StringIO
 import os
 import re
 
 FORMATS = ['otf', 'ttf', 'eot', 'woff', 'svg', 'sfd']
 
-# used to disable output from fontforge
-#class NullWriter(object):
-#    def write(self, arg): pass
-#
-#def disable_output(options):
-#    if options['debug']: return
-#    options['_stdout'] = sys.stdout
-#    #sys.stdout = NullWriter()
-#
-#def enable_output(options):
-#    if options['debug']: return
-#    sys.stdout = options['_stdout']
-
 def get_options(parser):
-    group = parser.add_argument_group('font creation options')
+    group = parser.add_argument_group('font generation options')
     group.add_argument('-l', '--font-copyright',
                        dest='font-copyright', default='OFL',
                         help='font copyright (default: "OFL")')
@@ -44,7 +32,6 @@ def get_options(parser):
                             ' (default: work-dir itself)')
 
 def parse_options(options, parser):
-    options['output-dir'] = os.path.join(options['work-dir'], options['output-dir'])
     options['font-output'] = os.path.join(options['output-dir'], options['font-output'])
     options['sfd-output'] = os.path.join(options['work-dir'], options['sfd-output'])
 
@@ -60,7 +47,10 @@ def parse_options(options, parser):
         if fmt not in FORMATS:
             parser.error('Wrong output font format: {0}'.format(fmt))
 
-def init(options = {}, **args):
+def init(options = {}, extensions = {}, **args):
+    if 'svg' not in extensions:
+        print 'font extension requires svg extension'
+        exit(1)
     options['_font'] = font = fontforge.font()
     font.copyright = options['font-copyright']
     font.familyname = options['font-family']
@@ -70,38 +60,37 @@ def init(options = {}, **args):
     font.weight = str(options['font-weight'])
     font.em = 1000
 
-def process(icon = None, options = {}, **args):
-    if icon is None: return
+def process(icon=None, options={}, extensions={}, **args):
+    if icon is None or 'svg' not in icon: return
     if options['debug']: print('processing icon {0}'.format(icon['name']))
 
     width = icon['svg'].props.width
     height = icon['svg'].props.height
-    if height != 1000:
-        scale = 1000 / height
-        tmp = tempfile.NamedTemporaryFile(suffix='.svg', delete=False)
-        surface = cairo.SVGSurface(tmp, scale * width / 1.25, 1000 / 1.25)
+    px2pt = 1 / 1.25
+    scale = 1000 / height
+    with tempfile.NamedTemporaryFile(suffix='.svg') as tmp:
+        # render icon into temporary buffer
+        svg = rsvg.Handle(file=icon['file'])
+        buf = StringIO.StringIO()
+        surface = cairo.SVGSurface(buf, scale * width * px2pt, 1000 * px2pt)
         ctx = cairo.Context(surface)
-        ctx.scale(scale / 1.25, scale / 1.25)
-        icon['svg'].render_cairo(ctx)
+        # scale icon to have height 1000px
+        ctx.scale(scale * px2pt, scale * px2pt)
+        svg.render_cairo(ctx)
         surface.finish()
-        tmp.close()
-        svg = tmp.name
-        width = width * scale
-        height = height * scale
-    else:
-        svg = icon['file']
-    glyph = options['_font'].createChar(icon['code'], 'uni{:04X}'.format(icon['code']))
-    try:
-        #disable_output(options)
-        glyph.importOutlines(svg)
-        #enable_output(options)
+        buf.seek(0)
+        # extract color information from icon and save it into tmp file
+        dom = extensions['svg'].extract_styles(file=buf, styles=['colors'])
+        tmp.write(dom.toxml().encode('utf-8'))
+        tmp.seek(0)
+        # import icon into font
+        glyph = options['_font'].createChar(icon['code'],
+                                            'uni{:04X}'.format(icon['code']))
+        glyph.importOutlines(tmp.name)
         glyph.addExtrema()
-    except:
-        print('Error importing icon "{0}" - invalid SVG'.format(icon['name']))
-        return
-    glyph.comment = icon['name']
-    glyph.width = width
-    glyph.vwidth = height
+        glyph.comment = icon['name']
+        glyph.width = width * scale
+        glyph.vwidth = height * scale
 
 def finish(options = {}, **args):
     font = options['_font']

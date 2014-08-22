@@ -10,10 +10,10 @@ import yaml
 
 ICON_RE = re.compile('^uni([0-9a-fA-F]+)_([a-zA-Z][a-zA-Z0-9\-]*)' +
                      '(?:_([a-zA-Z\-]+))?\.svg$')
-BUILTIN = set(['svg', 'font'])
 
 # icons generator
-def get_icons(folder):
+def get_icons(options):
+    folder = options['icons-dir']
     for svg_file in glob.iglob(os.path.join(folder, 'uni*.svg')):
         m = ICON_RE.match(svg_file.split('/')[-1])
         if m is None: continue
@@ -21,7 +21,7 @@ def get_icons(folder):
             'file': svg_file,
             'code': int(m.group(1), base=16),
             'name': m.group(2),
-            'extensions': BUILTIN
+            'extensions': set(options['default-extensions'])
         }
         if m.group(3) is not None:
             icon['extensions'] |= set(m.group(3).split('-'))
@@ -48,9 +48,13 @@ arg_parser.add_argument('-i', '--icons-dir',
 arg_parser.add_argument('-D', '--debug',
                         dest='debug', default=False, action='store_true',
                         help='print some debug info (default: False)')
+arg_parser.add_argument('-e', '--default-extensions',
+                        dest='default-extensions', default='svg font css',
+                        help='comma separated default extensions' +
+                             ' (default: "svg font css")')
 
-# parse main options and save unknown options for parsing in modules
-options, module_args = arg_parser.parse_known_args()
+# parse main options and save unknown options for parsing in extensions
+options, extensions_args = arg_parser.parse_known_args()
 options = vars(options)
 
 if options['config'] is None:
@@ -79,57 +83,66 @@ if options['config'] is not None:
 config_dir = os.path.dirname(options['config']) \
     if options['config'] is not None else os.path.expanduser('~')
 options['work-dir'] = os.path.join(config_dir, options['work-dir'])
+options['output-dir'] = os.path.join(options['work-dir'], options['output-dir'])
 options['icons-dir'] = os.path.join(options['work-dir'], options['icons-dir'])
 if not os.path.isdir(options['work-dir']):
     parser.error('Working directory {0} doen\'t exists'.format(options['work-dir']))
 if not os.path.isdir(options['icons-dir']):
     parser.error('Icons directory {0} doen\'t exists'.format(options['icons-dir']))
+if isinstance(options['default-extensions'], basestring):
+    options['default-extensions'] = re.split('\W+', options['default-extensions'])
 
-# add modules extensions folders
-if options['debug']: print('Loading modules. Optioins are: {0}'.format(options))
+# add user extensions folders
+if options['debug']: print('Loading extensions. Options are: {0}'.format(options))
 options['root'] = os.path.abspath(os.path.dirname(__file__))
 if options['work-dir'] not in sys.path:
     sys.path.insert(0, options['work-dir'])
 
 try:
-    icons = list(get_icons(options['icons-dir']))
+    icons = list(get_icons(options))
 
-    # retrieve module list
-    modules = dict(
+    # import extension list
+    extensions = dict(
         (ext, importlib.import_module(ext + '_extension')) \
             for ext in reduce(lambda a, x: a | x['extensions'], icons, set())
     )
 
-    # get modules options
-    for module in modules.values():
-        if hasattr(module, 'get_options'):
-            module.get_options(arg_parser)
+    # get extensions options
+    for ext in extensions.values():
+        if hasattr(ext, 'get_options'):
+            ext.get_options(arg_parser)
 
-    # parse unknown options for modules
-    options = dict(vars(arg_parser.parse_args(module_args)).items() +
+    # parse unknown options for extensions
+    options = dict(vars(arg_parser.parse_args(extensions_args)).items() +
                    options.items())
 
-    # module-specific options parsing
-    for module in modules.values():
-        if hasattr(module, 'parse_options'):
-            module.parse_options(options, arg_parser)
+    # ext-specific options parsing
+    for ext in extensions.values():
+        if hasattr(ext, 'parse_options'):
+            ext.parse_options(options, arg_parser)
 
-    if options['debug']: print('Modules loaded. Options are: {0}'.format(options))
+    if options['debug']: print('Extensions loaded. Options are: {0}'.format(options))
 
-    # initialize modules
-    for module in modules.values():
-        if hasattr(module, 'init'):
-            module.init(options=options, icons=icons)
+    # initialize extensions
+    for ext in extensions.values():
+        if hasattr(ext, 'init'):
+            ext.init(options=options,
+                     icons=icons,
+                     extensions=extensions)
 
     # iterate through icons
     for icon in icons:
         for ext in icon['extensions']:
-            modules[ext].process(options=options, icon=icon)
+            extensions[ext].process(options=options,
+                                    icon=icon,
+                                    extensions=extensions)
 
-    # modules teardown
-    for module in modules.values():
-        if hasattr(module, 'finish'):
-            module.finish(options=options, icons=icons)
+    # extensions teardown
+    for ext in extensions.values():
+        if hasattr(ext, 'finish'):
+            ext.finish(options=options,
+                       icons=icons,
+                       extensions=extensions)
 
 finally:
     None
