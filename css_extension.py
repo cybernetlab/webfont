@@ -1,6 +1,11 @@
 import os
 import string
 
+COMMENTS = """/*
+  This file is created automatically by webfont.py font generator
+  WARNING! Don't change this file. Make changes in webfont config file instead
+*/"""
+
 MAIN_CLASS = """
   display: inline-block;
   font-family: "{0}";
@@ -53,8 +58,6 @@ def parse_options(options, parser):
         if isinstance(options['css-aliases'], basestring):
             d = [map(str.strip, x.split(':', 2)) for x in options['css-aliases'].split(';') if ':' in x]
             options['css-aliases'] = dict((k, map(str.strip, v.split(','))) for k, v in d)
-    print(options['css-aliases'])
-
 
 def init(options = {}, extensions = {}, **args):
     if 'font' not in extensions:
@@ -67,6 +70,8 @@ def process(icon = None, options = {}, **args):
 
 def finish(options = {}, **args):
     with open(options['css-file'], 'w') as css:
+        css.write(COMMENTS)
+        css.write('\n\n')
         css.write('@font-face {\n')
         css.write('  font-family: "{0}";\n'.format(options['font-family']))
         css.write('  src: ')
