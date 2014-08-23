@@ -100,8 +100,8 @@ def _get_styles(node):
     styles = filter(None, map(_process_color, [(k, v) for k, v in styles if k in STYLES_FLAT]))
     return styles
 
-COLOR_HEX_RE = re.compile('^#(\h)(\h)(\h)$', re.IGNORECASE)
-COLOR_FULLHEX_RE = re.compile('^#(\h\h)(\h\h)(\h\h)$', re.IGNORECASE)
+COLOR_HEX_RE = re.compile('^#([0-9a-f])([0-9a-f])([0-9a-f])$', re.IGNORECASE)
+COLOR_FULLHEX_RE = re.compile('^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', re.IGNORECASE)
 COLOR_PERCENTS_RE = re.compile('^rgb\(\s*(\d{1,3})%,(\d{1,3})%,(\d{1,3})%\s*\)$', re.IGNORECASE)
 COLOR_RGB_RE = re.compile('^rgb\(\s*(\d{1,3}),(\d{1,3}),(\d{1,3})\s*\)$', re.IGNORECASE)
 
