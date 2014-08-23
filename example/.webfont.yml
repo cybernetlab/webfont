@@ -1,2 +1,3 @@
 config:
   font-formats: 'otf, woff, ttf'
+  css-aliases: "cat: kitty"
