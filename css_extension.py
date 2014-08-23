@@ -36,7 +36,7 @@ def get_options(parser):
                             ' (default: css-class and "-")')
     group.add_argument('--css-font-url',
                        dest='css-font-url', default='url(/fonts/{fontname})',
-                       help='font url template, use {filename} placeholder' +
+                       help='font url template, use {fontname} placeholder' +
                             ' for font file name' +
                             ' (default: "url(/fonts/{fontname})")')
     group.add_argument('--css-aliases',

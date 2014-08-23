@@ -1,6 +1,7 @@
 import cairo
 import rsvg
 import xml.dom.minidom
+import re
 
 def process(icon = None, options = {}, **args):
     if options['debug']: print('opening SVG file {0}'.format(icon['file']))
@@ -39,11 +40,12 @@ STYLES = {
 }
 
 STYLES_FLAT = [x for y in STYLES.values() for x in y]
+STYLES_COLOR = ['fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color']
 
 def collect_styles(icon=None, file=None, dom=None, styles='all'):
     if icon is None and dom is None and file is None: return None
     if dom is None: dom = get_dom(icon=icon, file=file)
-    result = {}
+    result = {'_unindefinied': []}
     styles = _parse_styles_arg(styles)
     _collect_styles(dom.documentElement, result, subject=styles)
     return result
@@ -64,9 +66,11 @@ def _parse_styles_arg(styles):
 
 def _collect_styles(node, styles, subject=[]):
     if node.nodeType != xml.dom.minidom.Node.ELEMENT_NODE: return None
-    if not node.hasAttribute('id'): return None
-    id = node.getAttribute('id')
-    styles[id] = dict((k, v) for k, v in _get_styles(node) if k in subject)
+    s = dict((k, v) for k, v in _get_styles(node) if k in subject)
+    if node.hasAttribute('id'):
+        styles[node.getAttribute('id')] = s
+    elif s:
+        styles['_unindefinied'].append(s)
     for child in node.childNodes:
         _collect_styles(child, styles, subject=subject)
 
@@ -93,4 +97,38 @@ def _get_styles(node):
     for attr in STYLES_FLAT:
         if node.hasAttribute(attr):
             styles.append((attr, node.getAttribute(attr)))
-    return [(k, v) for k, v in styles if k in STYLES_FLAT]
+    styles = filter(None, map(_process_color, [(k, v) for k, v in styles if k in STYLES_FLAT]))
+    return styles
+
+COLOR_HEX_RE = re.compile('^#(\h)(\h)(\h)$', re.IGNORECASE)
+COLOR_FULLHEX_RE = re.compile('^#(\h\h)(\h\h)(\h\h)$', re.IGNORECASE)
+COLOR_PERCENTS_RE = re.compile('^rgb\(\s*(\d{1,3})%,(\d{1,3})%,(\d{1,3})%\s*\)$', re.IGNORECASE)
+COLOR_RGB_RE = re.compile('^rgb\(\s*(\d{1,3}),(\d{1,3}),(\d{1,3})\s*\)$', re.IGNORECASE)
+
+def _process_color(style):
+    if style[0] not in STYLES_COLOR: return style
+    m = COLOR_HEX_RE.match(style[1])
+    if m:
+        return (style[0], (
+            int(m.group(1) + m.group(1), 16),
+            int(m.group(2) + m.group(2), 16),
+            int(m.group(3) + m.group(3), 16)
+        ))
+    m = COLOR_FULLHEX_RE.match(style[1])
+    if m:
+        return (style[0], (
+            int(m.group(1), 16),
+            int(m.group(2), 16),
+            int(m.group(3), 16)
+        ))
+    m = COLOR_PERCENTS_RE.match(style[1])
+    if m:
+        return (style[0], (
+            int(int(m.group(1)) * 2.55),
+            int(int(m.group(2)) * 2.55),
+            int(int(m.group(3)) * 2.55)
+        ))
+    m = COLOR_RGB_RE.match(style[1])
+    if m:
+        return (style[0], (int(m.group(1)), int(m.group(2)), int(m.group(3))))
+    return False
