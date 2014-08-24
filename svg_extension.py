@@ -55,6 +55,14 @@ def extract_styles(icon=None, file=None, dom=None, styles=[]):
     _extract_styles(dom.documentElement, subject=styles)
     return dom
 
+def replace_style(node, style, value):
+    styles = dict(_get_style(node))
+    if styles and style in styles:
+        styles[style] = value
+        node.setAttribute('style', ';'.join([':'.join((k, v)) for k, v in styles.iteritems()]))
+    if node.hasAttribute(style):
+        node.setAttribute(style, value)
+
 def _parse_styles_arg(styles):
     if styles == 'all': return STYLES_FLAT
     if isinstance(styles, basestring): styles = [styles]
@@ -73,7 +81,7 @@ def _extract_styles(node, subject=[]):
     if node.nodeType != xml.dom.minidom.Node.ELEMENT_NODE: return None
     style = [(k, v) for k, v in _get_style(node) if k not in subject]
     if len(style) > 0:
-        node.setAttribute('style', ';'.join(['='.join((k, v)) for k, v in style]))
+        node.setAttribute('style', ';'.join([':'.join((k, v)) for k, v in style]))
     elif node.hasAttribute('style'):
         node.removeAttribute('style')
     for attr in subject:
