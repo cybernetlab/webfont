@@ -8,23 +8,26 @@ import importlib
 import argparse
 import yaml
 
-ICON_RE = re.compile('^uni([0-9a-fA-F]+)_([a-zA-Z][a-zA-Z0-9\-]*)' +
-                     '(?:_([a-zA-Z\-]+))?\.svg$')
+ICON_RE = re.compile('^(?:uni(?P<code>[0-9a-fA-F]+)_)?' +
+                     '(?P<name>[a-zA-Z][a-zA-Z0-9\-]*)' +
+                     '(?:_(?P<ext>[a-zA-Z\-]+))?\.svg$')
 
 # icons generator
 def get_icons(options):
     folder = options['icons-dir']
-    for svg_file in glob.iglob(os.path.join(folder, 'uni*.svg')):
+    for svg_file in glob.iglob(os.path.join(folder, '*.svg')):
         m = ICON_RE.match(svg_file.split('/')[-1])
         if m is None: continue
         icon = {
             'file': svg_file,
-            'code': int(m.group(1), base=16),
-            'name': m.group(2),
+            'name': m.group('name'),
             'extensions': set(options['default-extensions'])
         }
-        if m.group(3) is not None:
-            icon['extensions'] |= set(m.group(3).split('-'))
+        if m.group('code'):
+            icon['code'] = int(m.group('code'), base=16)
+            icon['extensions'] |= set(['font', 'css'])
+        if m.group('ext'):
+            icon['extensions'] |= set(m.group('ext').split('-'))
         yield icon
 
 
@@ -51,7 +54,7 @@ arg_parser.add_argument('-D', '--debug',
 arg_parser.add_argument('-e', '--default-extensions',
                         dest='default-extensions', default='svg font css',
                         help='comma separated default extensions' +
-                             ' (default: "svg font css")')
+                             ' (default: "svg")')
 
 # parse main options and save unknown options for parsing in extensions
 options, extensions_args = arg_parser.parse_known_args()
