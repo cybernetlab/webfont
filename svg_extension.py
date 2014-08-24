@@ -138,4 +138,4 @@ class Color:
     @property
     def float(self):
         if self.rgb is None: return (0.0, 0.0, 0.0)
-        return tuple([x / 255 for x in self.rgb])
+        return tuple([x / 255.0 for x in self.rgb])
