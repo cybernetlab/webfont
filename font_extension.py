@@ -67,7 +67,7 @@ def process(icon=None, options={}, extensions={}, **args):
     width = icon['svg'].props.width
     height = icon['svg'].props.height
     px2pt = 1 / 1.25
-    scale = 1000 / height
+    scale = 1000.0 / height
     with tempfile.NamedTemporaryFile(suffix='.svg') as tmp:
         # render icon into temporary buffer
         svg = rsvg.Handle(file=icon['file'])

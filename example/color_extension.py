@@ -10,4 +10,4 @@ def process(icon=None, options={}, extensions={}, **args):
                 print('Founded {0} style with color {1}'.format(k, v.web))
                 svg.replace_style(x['node'], k, '#f00')
     with open(os.path.join(options['output-dir'], icon['name'] + '.svg'), 'w') as f:
-        f.write(dom.toxml())
+        f.write(dom.toxml().encode('utf-8'))
