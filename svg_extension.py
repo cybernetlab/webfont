@@ -42,13 +42,11 @@ STYLES = {
 STYLES_FLAT = [x for y in STYLES.values() for x in y]
 STYLES_COLOR = ['fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color']
 
-def collect_styles(icon=None, file=None, dom=None, styles='all'):
-    if icon is None and dom is None and file is None: return None
-    if dom is None: dom = get_dom(icon=icon, file=file)
-    result = {'_unindefinied': []}
+def iter_styles(dom, styles='all'):
     styles = _parse_styles_arg(styles)
+    result = []
     _collect_styles(dom.documentElement, result, subject=styles)
-    return result
+    for x in result: yield x
 
 def extract_styles(icon=None, file=None, dom=None, styles=[]):
     if icon is None and dom is None and file is None: return None
@@ -66,11 +64,8 @@ def _parse_styles_arg(styles):
 
 def _collect_styles(node, styles, subject=[]):
     if node.nodeType != xml.dom.minidom.Node.ELEMENT_NODE: return None
-    s = dict((k, v) for k, v in _get_styles(node) if k in subject)
-    if node.hasAttribute('id'):
-        styles[node.getAttribute('id')] = s
-    elif s:
-        styles['_unindefinied'].append(s)
+    style = dict((k, v) for k, v in _get_styles(node) if k in subject)
+    if style: styles.append({ 'node': node, 'style': style })
     for child in node.childNodes:
         _collect_styles(child, styles, subject=subject)
 
@@ -97,38 +92,50 @@ def _get_styles(node):
     for attr in STYLES_FLAT:
         if node.hasAttribute(attr):
             styles.append((attr, node.getAttribute(attr)))
-    styles = filter(None, map(_process_color, [(k, v) for k, v in styles if k in STYLES_FLAT]))
+    styles = [(k, v) for k, v in styles if k in STYLES_FLAT]
+    styles = map(lambda x: (x[0], Color(x[1])) if x[0] in STYLES_COLOR else x, styles)
     return styles
 
-COLOR_HEX_RE = re.compile('^#([0-9a-f])([0-9a-f])([0-9a-f])$', re.IGNORECASE)
-COLOR_FULLHEX_RE = re.compile('^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', re.IGNORECASE)
-COLOR_PERCENTS_RE = re.compile('^rgb\(\s*(\d{1,3})%,(\d{1,3})%,(\d{1,3})%\s*\)$', re.IGNORECASE)
-COLOR_RGB_RE = re.compile('^rgb\(\s*(\d{1,3}),(\d{1,3}),(\d{1,3})\s*\)$', re.IGNORECASE)
+class Color:
+    HEX_RE = re.compile('^#([0-9a-f])([0-9a-f])([0-9a-f])$', re.IGNORECASE)
+    FULLHEX_RE = re.compile('^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$', re.IGNORECASE)
+    PERCENTS_RE = re.compile('^rgb\(\s*(\d{1,3})%,(\d{1,3})%,(\d{1,3})%\s*\)$', re.IGNORECASE)
+    RGB_RE = re.compile('^rgb\(\s*(\d{1,3}),(\d{1,3}),(\d{1,3})\s*\)$', re.IGNORECASE)
 
-def _process_color(style):
-    if style[0] not in STYLES_COLOR: return style
-    m = COLOR_HEX_RE.match(style[1])
-    if m:
-        return (style[0], (
-            int(m.group(1) + m.group(1), 16),
-            int(m.group(2) + m.group(2), 16),
-            int(m.group(3) + m.group(3), 16)
-        ))
-    m = COLOR_FULLHEX_RE.match(style[1])
-    if m:
-        return (style[0], (
-            int(m.group(1), 16),
-            int(m.group(2), 16),
-            int(m.group(3), 16)
-        ))
-    m = COLOR_PERCENTS_RE.match(style[1])
-    if m:
-        return (style[0], (
-            int(int(m.group(1)) * 2.55),
-            int(int(m.group(2)) * 2.55),
-            int(int(m.group(3)) * 2.55)
-        ))
-    m = COLOR_RGB_RE.match(style[1])
-    if m:
-        return (style[0], (int(m.group(1)), int(m.group(2)), int(m.group(3))))
-    return False
+    def __init__(self, value):
+        m = self.HEX_RE.match(value)
+        if m:
+            self.rgb = (int(m.group(1) + m.group(1), 16),
+                        int(m.group(2) + m.group(2), 16),
+                        int(m.group(3) + m.group(3), 16))
+            return
+        m = self.FULLHEX_RE.match(value)
+        if m:
+            self.rgb = (int(m.group(1), 16),
+                        int(m.group(2), 16),
+                        int(m.group(3), 16))
+            return
+        m = self.PERCENTS_RE.match(value)
+        if m:
+            self.rgb = (int(int(m.group(1)) * 2.55),
+                        int(int(m.group(2)) * 2.55),
+                        int(int(m.group(3)) * 2.55))
+            return
+        m = self.RGB_RE.match(value)
+        if m:
+            self.rgb = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            return
+        self.rgb = None
+
+    @property
+    def web(self):
+        if self.rgb is None: return '#000'
+        color = '#{0:02x}{1:02x}{2:02x}'.format(*self.rgb)
+        if color[1] == color[2] and color[3] == color[4] and color[5] == color[6]:
+            return '#' + color[1] + color[3] + color[5]
+        return color
+
+    @property
+    def float(self):
+        if self.rgb is None: return (0.0, 0.0, 0.0)
+        return tuple([x / 255 for x in self.rgb])
