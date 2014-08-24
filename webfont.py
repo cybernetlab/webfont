@@ -52,7 +52,7 @@ arg_parser.add_argument('-D', '--debug',
                         dest='debug', default=False, action='store_true',
                         help='print some debug info (default: False)')
 arg_parser.add_argument('-e', '--default-extensions',
-                        dest='default-extensions', default='svg font css',
+                        dest='default-extensions', default='svg',
                         help='comma separated default extensions' +
                              ' (default: "svg")')
 
