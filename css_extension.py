@@ -100,7 +100,7 @@ def finish(options = {}, **args):
                                options['font-family'])))
         css.write(',\n       '.join(fonts) + ';\n}\n\n')
 
-        css.write('.{0}: {{{{{1}}}}}\n\n'.format(
+        css.write('.{0} {{{{{1}}}}}\n\n'.format(
             options['css-class'], MAIN_CLASS
         ).format(options['font-family']))
         for icon, code in options['_css'].iteritems():
