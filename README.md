@@ -11,6 +11,10 @@ following packages should be installed (with `apt-get install`):
 * python-rsvg
 * python-yaml
 
+```sh
+sudo apt-get install -y python python-fontforge python-rsvg python-yaml
+```
+
 to make eot files you should compile google [ttf2eot](https://code.google.com/p/ttf2eot/) utility. [Download it](https://ttf2eot.googlecode.com/files/ttf2eot-0.0.2-2.tar.gz) and install with following commands (this commands tested on ubuntu trusty):
 
 ```sh
@@ -21,7 +25,10 @@ wget https://ttf2eot.googlecode.com/files/ttf2eot-0.0.2-2.tar.gz
 tar -zxf ttf2eot-0.0.2-2.tar.gz
 cd ttf2eot-0.0.2-2/
 sed -i 's/.*#include <string\.h>.*/#include <stddef.h>\n&/' OpenTypeUtilities.cpp
+make
 cp ttf2eot /path/to/webfont
+chmod +x /path/to/webfont/ttf2eot
+chmod +x /path/to/webfont/webfont.py
 ```
 
 ## Usage
