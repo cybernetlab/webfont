@@ -44,6 +44,9 @@ def get_options(parser):
                        help='css classes aliases in form' +
                             ' "icon1: alias1, alias2; icon2: other-alias1"' +
                             ' (default: no aliases)')
+    group.add_argument('--css-font-size',
+                       dest='css-font-size',
+                       help='font size (default: not set)')
 
 def parse_options(options, parser):
     options['css-output'] = os.path.join(options['output-dir'], options['css-output'])
@@ -100,8 +103,11 @@ def finish(options = {}, **args):
                                options['font-family'])))
         css.write(',\n       '.join(fonts) + ';\n}\n\n')
 
-        css.write('.{0} {{{{{1}}}}}\n\n'.format(
-            options['css-class'], MAIN_CLASS
+        font_size = ''
+        if options['css-font-size'] is not None:
+          font_size = '  font-size: {0};\n'.format(options['css-font-size'])
+        css.write('.{0} {{{{{1}{2}}}}}\n\n'.format(
+            options['css-class'], MAIN_CLASS, font_size
         ).format(options['font-family']))
         for icon, code in options['_css'].iteritems():
             classes = ['.{0}{1}:before'.format(options['css-prefix'], icon)]
