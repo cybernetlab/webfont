@@ -60,9 +60,10 @@ def init(options = {}, extensions = {}, **args):
     font.weight = str(options['font-weight'])
     font.em = 1000
 
-def process(icon=None, options={}, extensions={}, **args):
+def process(icon=None, extensions={}, **args):
     if icon is None or 'svg' not in icon: return
-    if options['debug']: print('processing icon {0}'.format(icon['name']))
+    if icon['options']['debug']:
+        print('processing icon {0}'.format(icon['name']))
 
     width = icon['svg'].props.width
     height = icon['svg'].props.height
@@ -84,8 +85,10 @@ def process(icon=None, options={}, extensions={}, **args):
         tmp.write(dom.toxml().encode('utf-8'))
         tmp.seek(0)
         # import icon into font
-        glyph = options['_font'].createChar(icon['code'],
-                                            'uni{:04X}'.format(icon['code']))
+        glyph = icon['options']['_font'].createChar(
+            icon['code'],
+            'uni{:04X}'.format(icon['code'])
+        )
         glyph.importOutlines(tmp.name)
         glyph.addExtrema()
         glyph.comment = icon['name']

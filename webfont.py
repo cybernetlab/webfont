@@ -25,7 +25,7 @@ def get_icons(options):
         }
         if m.group('code'):
             icon['code'] = int(m.group('code'), base=16)
-            icon['extensions'] |= set(['font', 'css'])
+            icon['extensions'] |= set(['font', 'css', 'css_vars'])
         if m.group('ext'):
             icon['extensions'] |= set(m.group('ext').split('-'))
         yield icon
@@ -89,9 +89,9 @@ options['work-dir'] = os.path.join(config_dir, options['work-dir'])
 options['output-dir'] = os.path.join(options['work-dir'], options['output-dir'])
 options['icons-dir'] = os.path.join(options['work-dir'], options['icons-dir'])
 if not os.path.isdir(options['work-dir']):
-    parser.error('Working directory {0} doen\'t exists'.format(options['work-dir']))
+    arg_parser.error('Working directory {0} doen\'t exists'.format(options['work-dir']))
 if not os.path.isdir(options['icons-dir']):
-    parser.error('Icons directory {0} doen\'t exists'.format(options['icons-dir']))
+    arg_parser.error('Icons directory {0} doen\'t exists'.format(options['icons-dir']))
 if isinstance(options['default-extensions'], basestring):
     options['default-extensions'] = re.split('\W+', options['default-extensions'])
 
@@ -124,7 +124,8 @@ try:
         if hasattr(ext, 'parse_options'):
             ext.parse_options(options, arg_parser)
 
-    if options['debug']: print('Extensions loaded. Options are: {0}'.format(options))
+    if options['debug']:
+        print('Extensions loaded. Options are: {0}'.format(options))
 
     # initialize extensions
     for ext in extensions.values():
@@ -135,6 +136,7 @@ try:
 
     # iterate through icons
     for icon in icons:
+        icon['options'] = options
         for ext in icon['extensions']:
             extensions[ext].process(options=options,
                                     icon=icon,

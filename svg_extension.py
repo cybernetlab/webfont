@@ -3,9 +3,11 @@ import rsvg
 import xml.dom.minidom
 import re
 
-def process(icon = None, options = {}, **args):
-    if options['debug']: print('opening SVG file {0}'.format(icon['file']))
+def process(icon = None, **args):
+    if icon['options']['debug']:
+        print('opening SVG file {0}'.format(icon['file']))
     icon['svg'] = rsvg.Handle(file=icon['file'])
+    icon['color'] = get_color(icon=icon)
 
 def get_dom(icon=None, file=None):
     if file is None and icon is None: return None
@@ -16,6 +18,20 @@ def get_dom(icon=None, file=None):
     finally:
         file.close()
     return dom
+
+# find color in dom
+def get_color(icon=None, file=None):
+    if icon is not None and 'color' in icon: return icon['color']
+    dom = get_dom(icon=icon, file=file)
+    if dom is None: return None
+    color = None
+    for x in iter_styles(dom, styles='colors'):
+        for k, v in x['style'].iteritems():
+            if isinstance(v, Color) and v.web != '#000':
+                color = v
+                break
+        if color is not None: break
+    return color
 
 STYLES = {
     'fonts': ['font', 'font-family', 'font-size', 'font-size-adjust',

@@ -68,8 +68,17 @@ def init(options = {}, extensions = {}, **args):
         exit(1)
     options['_css'] = {}
 
-def process(icon = None, options = {}, **args):
-    options['_css'][icon['name']] = icon['code']
+def get_names(icon = None):
+    if icon is None: return []
+    if 'names' in icon: return icon['names']
+    names = [icon['name']]
+    if icon['name'] in icon['options']['css-aliases']:
+        names += icon['options']['css-aliases'][icon['name']]
+    return names
+
+def process(icon = None, **args):
+    icon['options']['_css'][icon['name']] = icon['code']
+    icon['names'] = get_names(icon = icon)
 
 def finish(options = {}, **args):
     with open(options['css-file'], 'w') as css:
