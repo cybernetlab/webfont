@@ -34,6 +34,10 @@ def get_options(parser):
                        dest='css-prefix',
                        help='css prefix for individual icon classes' +
                             ' (default: css-class and "-")')
+    group.add_argument('--css-skip-font-face', default=False,
+                       dest='css-skip-font-face',
+                       help='should @font-face directive be skipped in css' +
+                            ' (default: false)')
     group.add_argument('--css-font-url',
                        dest='css-font-url', default='url(/fonts/{fontname})',
                        help='font url template, use {fontname} placeholder' +
@@ -84,33 +88,35 @@ def finish(options = {}, **args):
     with open(options['css-file'], 'w') as css:
         css.write(COMMENTS)
         css.write('\n\n')
-        css.write('@font-face {\n')
-        css.write('  font-family: "{0}";\n'.format(options['font-family']))
-        css.write('  src: ')
+        if not options['css-skip-font-face']:
+            css.write('@font-face {\n')
+            css.write('  font-family: "{0}";\n'.format(options['font-family']))
+            css.write('  src: ')
+            css.write('\n\n')
 
-        fonts = []
-        if 'woff' in options['font-formats']:
-            fonts.append('{0} format(\'woff\')'.format(
-                options['css-font-url'].format(
-                    fontname = options['font-family'] + '.woff')))
-        if 'eot' in options['font-formats']:
-            fonts.append('{0} format(\'embedded-opentype\')'.format(
-                options['css-font-url'].format(
-                    fontname = options['font-family'] + '.eot?#iefix')))
-        if 'otf' in options['font-formats']:
-            fonts.append('{0} format(\'opentype\')'.format(
-                options['css-font-url'].format(
-                    fontname = options['font-family'] + '.otf')))
-        if 'ttf' in options['font-formats']:
-            fonts.append('{0} format(\'truetype\')'.format(
-                options['css-font-url'].format(
-                    fontname = options['font-family'] + '.ttf')))
-        if 'svg' in options['font-formats']:
-            fonts.append('{0} format(\'svg\')'.format(
-                options['css-font-url'].format(
-                    fontname = options['font-family'] + '.svg#' +
-                               options['font-family'])))
-        css.write(',\n       '.join(fonts) + ';\n}\n\n')
+            fonts = []
+            if 'woff' in options['font-formats']:
+                fonts.append('{0} format(\'woff\')'.format(
+                    options['css-font-url'].format(
+                        fontname = options['font-family'] + '.woff')))
+            if 'eot' in options['font-formats']:
+                fonts.append('{0} format(\'embedded-opentype\')'.format(
+                    options['css-font-url'].format(
+                        fontname = options['font-family'] + '.eot?#iefix')))
+            if 'otf' in options['font-formats']:
+                fonts.append('{0} format(\'opentype\')'.format(
+                    options['css-font-url'].format(
+                        fontname = options['font-family'] + '.otf')))
+            if 'ttf' in options['font-formats']:
+                fonts.append('{0} format(\'truetype\')'.format(
+                    options['css-font-url'].format(
+                        fontname = options['font-family'] + '.ttf')))
+            if 'svg' in options['font-formats']:
+                fonts.append('{0} format(\'svg\')'.format(
+                    options['css-font-url'].format(
+                        fontname = options['font-family'] + '.svg#' +
+                                   options['font-family'])))
+            css.write(',\n       '.join(fonts) + ';\n}\n\n')
 
         font_size = ''
         if options['css-font-size'] is not None:
